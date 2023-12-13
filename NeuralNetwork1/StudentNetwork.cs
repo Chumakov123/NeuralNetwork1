@@ -18,7 +18,7 @@ namespace NeuralNetwork1
             //Ошибка
             public double error = 0;
             //Сигнал поляризации (нафига нужен и почему -1)
-            public double biasSignal = -1.0;
+            public double biasSignal = 1.0;
 
             private static readonly Random rnd = new Random();
             //Диапазон инициализации весов (нужно разобраться почему -1 и 1)
@@ -87,7 +87,7 @@ namespace NeuralNetwork1
             }
         }
 
-        public double learningSpeed = 0.01; // Скорость обучения
+        public double learningSpeed = 0.001; // Скорость обучения
         private Neuron[] sensors;
         private Neuron[] outputs;
         private Neuron[][] layers; //Здесь создаются нейроны, остальные массивы - ссылки
@@ -129,6 +129,7 @@ namespace NeuralNetwork1
         private double[] Run(Sample image)
         {
             double[] result = Compute(image.input);
+            //Inversion(result);
             image.ProcessPrediction(result);
             return result;
         }
@@ -138,17 +139,16 @@ namespace NeuralNetwork1
             int iterations = 0;
 
             Run(sample);
-            double error = 1 - sample.EstimatedError();
+            double error = sample.EstimatedError();
 
             while (error > acceptableError)
             {
-                //Debug.WriteLine(error);
+                Debug.WriteLine($"e {error} a {acceptableError}");
                 Run(sample);
+                error = sample.EstimatedError();
 
-                error = 1 - sample.EstimatedError();
-                
-                BackProp(sample, learningSpeed);
                 ++iterations;
+                BackProp(sample, learningSpeed);
             }
             return iterations;
         }
@@ -157,21 +157,19 @@ namespace NeuralNetwork1
         {
             Debug.WriteLine("Обучение");
             watch.Restart();
-            //double guessLevel = 0;
             double error = double.PositiveInfinity;
 
             for (int curEpoch = 0; curEpoch < epochsCount; ++curEpoch)
             {
                 Debug.WriteLine($"Эпоха {curEpoch}");
+                double errorSum = 0;
                 for (int i = 0; i < samplesSet.Count; ++i)
                 {
                     if (Train(samplesSet.samples.ElementAt(i), acceptableError, false) == 0)
-                        error += 1 - samplesSet.samples.ElementAt(i).EstimatedError();
-                    //guessLevel /= samplesSet.samples.Count;
-                    //if (guessLevel > acceptableError) 
-                    //    return guessLevel;
-                    OnTrainProgress((epochsCount * 1.0) / epochsCount, error, watch.Elapsed);
+                        errorSum += samplesSet.samples.ElementAt(i).EstimatedError();
                 }
+                error = errorSum;
+                OnTrainProgress(((curEpoch+1) * 1.0) / epochsCount, error, watch.Elapsed);
             }
             watch.Stop();
             return error;
@@ -201,9 +199,19 @@ namespace NeuralNetwork1
                 for (int j = 0; j < layers[i].Length; ++j)
                     layers[i][j].BackpropError(ita);
         }
-        //private double SigmoidDerivative(double x)
-        //{
-        //    return x * (1 - x);
-        //}
+        
+        private double Sigmoid(double x) => 1.0 / (1.0 + Math.Exp(-x));
+        private double SigmoidDerivative(double x) => x * (1 - x);
+
+        private double GetError(double[] res, double[] expect) // Среднее квадратичное отклонение
+        {
+            double error = 0;
+            for (int i = 0; i < res.Length; i++)
+            {
+                error += Math.Pow(expect[i] - res[i], 2);
+            }
+            return error / 2;
+        }
+
     }
 }
