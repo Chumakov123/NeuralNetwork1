@@ -11,7 +11,7 @@ namespace NeuralNetwork1
     {
         private static double Sigmoid(double x) => 1.0 / (1.0 + Math.Exp(-x));
         private static double SigmoidDerivative(double x) => x * (1 - x);
-        public static double learningSpeed = 0.01;
+        public static double learningRate = 0.01;
         private static Random r = new Random();
         private class Neuron
         {
@@ -52,9 +52,9 @@ namespace NeuralNetwork1
             {
                 for (int i = 0; i < weights.Length; ++i)
                 {
-                    weights[i] -= learningSpeed * error * inputs[i].output;
+                    weights[i] -= learningRate * error * inputs[i].output;
                 }
-                biasWeight -= learningSpeed * error;
+                biasWeight -= learningRate * error;
             }
         }
 
@@ -134,8 +134,8 @@ namespace NeuralNetwork1
                 double errorSum = 0;
                 for (int i = 0; i < samplesSet.Count; ++i)
                 {
-                    if (Train(samplesSet.samples.ElementAt(i), acceptableError, false) == 0)
-                        errorSum += samplesSet.samples.ElementAt(i).EstimatedError();
+                    if (Train(samplesSet.samples[i], acceptableError, false) == 0)
+                        errorSum += samplesSet.samples[i].EstimatedError();
                 }
                 error = errorSum;
                 OnTrainProgress(((curEpoch+1) * 1.0) / epochsCount, error, watch.Elapsed);
